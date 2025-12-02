@@ -55,4 +55,4 @@ def dashboard_view(request):
         'total_attendance': total_attendance,
     }
 
-    return render(request, 'dashboard.html', context)
+    return render(request, 'dashboard/dashboard.html', context)
