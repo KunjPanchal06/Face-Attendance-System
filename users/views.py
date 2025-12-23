@@ -1,13 +1,13 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
-from .models import UserRole, StudentProfile
+from .models import UserRole
 from classrooms.models import Classroom
 # from attendance.models import AttendanceSession, AttendanceRecord
 from django.utils.timezone import now
 from django.contrib.auth.decorators import login_required
 from .decorators import admin_required, student_required
-
+from django.contrib.auth.models import User
 
 # Create your views here.
 

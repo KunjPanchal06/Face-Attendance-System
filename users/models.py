@@ -15,10 +15,3 @@ class UserRole(models.Model):
     def __str__(self):
         return f"{self.user.username} - {self.role}"
     
-class StudentProfile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    face_image = models.ImageField(upload_to='face_images/', null=True, blank=True)
-    embedding = models.JSONField(null=True, blank=True)
-
-    def __str__(self):
-        return self.user.username
