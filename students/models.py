@@ -8,7 +8,7 @@ class Student(models.Model):
     roll_no = models.CharField(max_length=50, unique=True)
     classroom = models.ForeignKey(Classroom, on_delete=models.CASCADE)
 
-    face_image = models.ImageField(upload_to='students/')
+    face_image = models.ImageField(upload_to='students/faces/')
     face_embedding = models.JSONField(blank=True, null=True)
 
     def save(self, *args, **kwargs):
