@@ -8,6 +8,7 @@ from django.utils.timezone import now
 from django.contrib.auth.decorators import login_required
 from .decorators import admin_required, student_required
 from django.contrib.auth.models import User
+from students.models import Student
 
 # Create your views here.
 
@@ -23,9 +24,8 @@ def login_view(request):
 
             # FIX: safe role fetching
             user_role = UserRole.objects.filter(user=user).first()
-
+            
             if user_role is None:
-                # Default role
                 return redirect('users:admin_dashboard')
 
             if user_role.role == 'admin':
@@ -42,27 +42,11 @@ def logout_view(request):
     logout(request)
     return redirect('/users/login')
 
-# @login_required(login_url='/users/login')
-# def dashboard_view(request):
-#     total_classrooms = Classroom.objects.count()
-#     total_students = StudentProfile.objects.count()
-#     total_sessions_today = 0
-#     total_attendance = 0
-
-#     context = {
-#         'total_classrooms': total_classrooms,
-#         'total_students': total_students,
-#         'total_sessions_today': total_sessions_today,
-#         'total_attendance': total_attendance,
-#     }
-
-#     return render(request, 'dashboard/dashboard.html', context)
-
 @login_required(login_url='/users/login')
 @admin_required
 def admin_dashboard_view(request):
     total_classrooms = Classroom.objects.count()
-    total_students = StudentProfile.objects.count()
+    total_students = Student.objects.count()
     total_sessions_today = 0
     total_attendance = 0
 
@@ -77,7 +61,7 @@ def admin_dashboard_view(request):
 @login_required(login_url='/users/login')
 @student_required
 def student_dashboard_view(request):
-    profile = StudentProfile.objects.filter(user=request.user).first()
+    profile = Student.objects.filter(user=request.user).first()
 
     attendance_percent = 85
     classes_attended = 40

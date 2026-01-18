@@ -1,0 +1,423 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Student - FaceTrackr</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind Config -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        brand: {
+                            50: '#eef2ff', 100: '#e0e7ff', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Camera UI Specific Styles */
+        .camera-container {
+            position: relative;
+            background-color: #0f172a; /* Slate 900 */
+            border-radius: 0.75rem;
+            overflow: hidden;
+            aspect-ratio: 4/3;
+        }
+        
+        video#webcam-feed {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1); /* Mirror effect */
+        }
+
+        .scan-overlay {
+            position: absolute;
+            inset: 0;
+            border: 2px solid rgba(99, 102, 241, 0.5); /* Brand-500 transparent */
+            border-radius: 0.75rem;
+            pointer-events: none;
+        }
+
+        .scan-line {
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            background: #6366f1;
+            top: 0;
+            animation: scan 3s infinite linear;
+            box-shadow: 0 0 10px #6366f1;
+            opacity: 0;
+        }
+
+        .capturing .scan-line {
+            opacity: 1;
+        }
+
+        @keyframes scan {
+            0% { top: 0%; opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { top: 100%; opacity: 0; }
+        }
+
+        /* Progress Bar Transition */
+        #progress-fill {
+            transition: width 0.3s ease-out;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 font-sans text-slate-900">
+
+    <!-- Mobile Header -->
+    <div class="lg:hidden bg-white shadow-sm h-16 flex items-center justify-between px-4 sticky top-0 z-20">
+        <div class="flex items-center">
+            <button onclick="toggleSidebar()" class="text-slate-500 hover:text-brand-600 focus:outline-none">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+            </button>
+            <span class="ml-3 font-bold text-lg text-slate-800">FaceTrackr</span>
+        </div>
+        <div class="h-8 w-8 rounded-full bg-brand-100 flex items-center justify-center text-brand-600 font-bold text-sm">
+            A
+        </div>
+    </div>
+
+    <div class="flex h-screen overflow-hidden">
+        
+        <!-- Sidebar -->
+        <aside id="sidebar" class="fixed inset-y-0 left-0 z-10 w-64 bg-white border-r border-slate-200 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out lg:static lg:block">
+            
+            <!-- Sidebar Logo -->
+            <div class="flex items-center justify-center h-16 border-b border-slate-100">
+                <div class="flex items-center gap-2">
+                    <div class="bg-brand-600 text-white p-1.5 rounded-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4a4 4 0 100 8 4 4 0 000-8z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.5 19a9 9 0 0117 0" />
+                        </svg>
+                    </div>
+                    <span class="text-xl font-bold tracking-tight text-slate-900">FaceTrackr</span>
+                </div>
+            </div>
+
+            <!-- Nav Links -->
+            <nav class="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
+                <a href="{% url 'users:admin_dashboard' %}" class="flex items-center px-4 py-3 text-sm font-medium text-slate-600 rounded-lg hover:bg-slate-50 hover:text-brand-600 transition-colors group">
+                    <svg class="mr-3 h-5 w-5 text-slate-400 group-hover:text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                    </svg>
+                    Dashboard
+                </a>
+
+                <a href="{% url 'classroom_list' %}" class="flex items-center px-4 py-3 text-sm font-medium text-slate-600 rounded-lg hover:bg-slate-50 hover:text-brand-600 transition-colors group">
+                    <svg class="mr-3 h-5 w-5 text-slate-400 group-hover:text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                    Classrooms
+                </a>
+
+                <!-- Active Students Link -->
+                <a href="#" class="flex items-center px-4 py-3 text-sm font-medium text-brand-600 bg-brand-50 rounded-lg group relative">
+                    <div class="absolute inset-y-0 left-0 w-1 bg-brand-600 rounded-r-full"></div>
+                    <svg class="mr-3 h-5 w-5 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                    Students
+                </a>
+
+                <a href="#" class="flex items-center px-4 py-3 text-sm font-medium text-slate-600 rounded-lg hover:bg-slate-50 hover:text-brand-600 transition-colors group">
+                    <svg class="mr-3 h-5 w-5 text-slate-400 group-hover:text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Attendance Reports
+                </a>
+            </nav>
+
+            <!-- User Profile -->
+            <div class="border-t border-slate-200 p-4">
+                <div class="flex items-center gap-3">
+                    <img class="h-9 w-9 rounded-full object-cover ring-2 ring-white" src="https://ui-avatars.com/api/?name=Admin+User&background=6366f1&color=fff" alt="User avatar">
+                    <div>
+                        <p class="text-sm font-medium text-slate-900">Administrator</p>
+                        <p class="text-xs text-slate-500">admin@school.edu</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col h-screen overflow-hidden relative">
+            
+            <!-- Sidebar Overlay -->
+            <div id="sidebarOverlay" onclick="toggleSidebar()" class="fixed inset-0 bg-slate-900/50 z-0 hidden lg:hidden transition-opacity opacity-0"></div>
+
+            <!-- Top Header -->
+            <header class="hidden lg:flex items-center justify-between h-16 bg-white border-b border-slate-200 px-8">
+                <h1 class="text-lg font-semibold text-slate-800">Student Management</h1>
+            </header>
+
+            <!-- Content -->
+            <div class="flex-1 overflow-y-auto bg-slate-50 p-4 lg:p-8">
+                
+                <div class="max-w-6xl mx-auto">
+                    
+                    <!-- Breadcrumb -->
+                    <div class="mb-6">
+                        <a href="student_list.html" class="inline-flex items-center text-sm font-medium text-slate-500 hover:text-brand-600">
+                            <svg class="mr-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                            </svg>
+                            Back to Student List
+                        </a>
+
+                        <h2 class="mt-2 text-2xl font-bold text-slate-900">Add New Student</h2>
+                        <p class="mt-1 text-sm text-slate-500">Register a new student and capture face data for attendance.</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        
+                        <!-- Left Column: Student Details -->
+                        <div class="space-y-6">
+                            <div class="bg-white shadow-sm rounded-xl border border-slate-200 overflow-hidden">
+                                <div class="px-6 py-4 border-b border-slate-100">
+                                    <h3 class="text-base font-semibold text-slate-800">Student Information</h3>
+                                </div>
+                                
+                                <form id="studentForm" class="p-6 space-y-6">
+                                    {% csrf_token %}
+                                    
+                                    <!-- Full Name -->
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700">Full Name</label>
+                                        <input type="text" name="name" required
+                                            class="mt-1 block w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 py-2.5 px-3"
+                                            placeholder="e.g., John Doe">
+                                    </div>
+
+                                    <!-- Roll Number -->
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700">Roll Number</label>
+                                        <input type="text" name="roll_number" required
+                                            class="mt-1 block w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 py-2.5 px-3"
+                                            placeholder="e.g., R-2025-001">
+                                    </div>
+
+                                    <!-- Classroom -->
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700">Assign Classroom</label>
+                                        <select name="classroom" class="mt-1 block w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 py-2.5 px-3 bg-white">
+                                            <option value="">Select a classroom...</option>
+                                            <option value="1">Class 10-A</option>
+                                            <option value="2">Class 12-B</option>
+                                            <option value="3">Computer Lab</option>
+                                        </select>
+                                    </div>
+
+                                    <!-- Action Buttons (Hidden until capture complete or managed by JS) -->
+                                    <div class="pt-4 flex items-center justify-end space-x-3 border-t border-slate-100 mt-6">
+                                        <a href="student_list.html" class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50">
+                                            Cancel
+                                        </a>
+                                        <button type="button" id="saveBtn" disabled class="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                                            Save Student
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+
+                             <!-- Instructions -->
+                             <div class="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                                <h3 class="text-sm font-semibold text-blue-800">Instructions</h3>
+                                <ul class="mt-2 text-sm text-blue-700 list-disc list-inside space-y-1">
+                                    <li>Ensure the student is facing the camera directly.</li>
+                                    <li>Lighting should be bright and even.</li>
+                                    <li>Ask student to slowly turn head slightly left and right.</li>
+                                    <li>System needs <strong>30 images</strong> to train the model.</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Right Column: Camera & Capture -->
+                        <div class="space-y-6">
+                            <div class="bg-white shadow-sm rounded-xl border border-slate-200 overflow-hidden">
+                                <div class="px-6 py-4 border-b border-slate-100">
+                                    <h3 class="text-base font-semibold text-slate-800">Face Data Capture</h3>
+                                </div>
+
+                                <div class="p-6">
+                                    <!-- Camera Area -->
+                                    <div class="camera-container mb-4 shadow-inner" id="camera-box">
+                                        <video id="webcam-feed" autoplay playsinline muted></video>
+                                        <div class="scan-overlay">
+                                            <div class="scan-line"></div>
+                                        </div>
+                                        
+                                        <!-- Start Button Overlay -->
+                                        <div id="camera-placeholder" class="absolute inset-0 flex items-center justify-center bg-slate-900 z-10">
+                                            <button onclick="startCamera()" class="flex flex-col items-center text-slate-300 hover:text-white transition-colors">
+                                                <svg class="h-12 w-12 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                                </svg>
+                                                <span class="font-medium">Start Camera</span>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Controls -->
+                                    <div class="space-y-5">
+                                        <!-- Progress Bar -->
+                                        <div>
+                                            <div class="flex justify-between text-sm font-medium mb-1">
+                                                <span class="text-slate-700">Capture Progress</span>
+                                                <span class="text-brand-600" id="count-text">0 / 30</span>
+                                            </div>
+                                            <div class="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
+                                                <div id="progress-fill" class="bg-brand-600 h-2.5 rounded-full" style="width: 0%"></div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Action Buttons -->
+                                        <div class="flex gap-3">
+                                            <button id="captureBtn" onclick="startCapture()" disabled 
+                                                class="flex-1 py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+                                                Capture Face Data
+                                            </button>
+                                            <button onclick="resetCapture()" class="py-2.5 px-4 border border-slate-300 rounded-lg shadow-sm text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 focus:outline-none">
+                                                Reset
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Hidden Canvas -->
+                                    <canvas id="hidden-canvas" class="hidden"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Toggle Sidebar Script -->
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+
+            if (sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.remove('-translate-x-full');
+                overlay.classList.remove('hidden');
+                setTimeout(() => overlay.classList.remove('opacity-0'), 10);
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('opacity-0');
+                setTimeout(() => overlay.classList.add('hidden'), 300);
+            }
+        }
+
+        // Camera Logic
+        let videoStream = null;
+        let isCapturing = false;
+        let captureCount = 0;
+        const totalImages = 30;
+        const video = document.getElementById('webcam-feed');
+        const canvas = document.getElementById('hidden-canvas');
+        const ctx = canvas.getContext('2d');
+        const progressFill = document.getElementById('progress-fill');
+        const countText = document.getElementById('count-text');
+        const captureBtn = document.getElementById('captureBtn');
+        const saveBtn = document.getElementById('saveBtn');
+        const cameraBox = document.getElementById('camera-box');
+        const placeholder = document.getElementById('camera-placeholder');
+
+        async function startCamera() {
+            try {
+                videoStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { width: 640, height: 480, facingMode: 'user' } 
+                });
+                video.srcObject = videoStream;
+                placeholder.classList.add('hidden');
+                
+                video.onloadedmetadata = () => {
+                    captureBtn.disabled = false;
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                };
+            } catch (err) {
+                console.error("Camera Error:", err);
+                alert("Could not access camera. Please allow permissions.");
+            }
+        }
+
+        function startCapture() {
+            if (!videoStream) return;
+            
+            isCapturing = true;
+            captureBtn.disabled = true;
+            captureBtn.textContent = "Capturing...";
+            cameraBox.classList.add('capturing');
+
+            const interval = setInterval(() => {
+                if (captureCount >= totalImages) {
+                    clearInterval(interval);
+                    finishCapture();
+                    return;
+                }
+
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                captureCount++;
+                updateProgress();
+
+            }, 150);
+        }
+
+        function updateProgress() {
+            const percentage = (captureCount / totalImages) * 100;
+            progressFill.style.width = `${percentage}%`;
+            countText.textContent = `${captureCount} / ${totalImages}`;
+        }
+
+        function finishCapture() {
+            isCapturing = false;
+            cameraBox.classList.remove('capturing');
+            captureBtn.textContent = "Capture Complete";
+            captureBtn.classList.remove('bg-brand-600', 'hover:bg-brand-700');
+            captureBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+            saveBtn.disabled = false;
+        }
+
+        function resetCapture() {
+            captureCount = 0;
+            updateProgress();
+            captureBtn.disabled = false;
+            captureBtn.textContent = "Capture Face Data";
+            captureBtn.classList.add('bg-brand-600', 'hover:bg-brand-700');
+            captureBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
+            saveBtn.disabled = true;
+            cameraBox.classList.remove('capturing');
+        }
+    </script>
+
+</body>
+</html>

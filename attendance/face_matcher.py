@@ -7,12 +7,13 @@ def cosine_similarity(a, b):
     return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
 
 
-def find_matching_student(test_embedding, threshold=0.7):
+def find_matching_student(test_embedding, threshold=0.55):
     best_match = None
     highest_similarity = threshold
 
     for student in Student.objects.exclude(face_embedding=None):
         similarity = cosine_similarity(test_embedding, student.face_embedding)
+        print(f"Comparing with {student.roll_no}, similarity={similarity:.3f}")
 
         if similarity > highest_similarity:
             highest_similarity = similarity
