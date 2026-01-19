@@ -9,6 +9,8 @@ from django.db import transaction
 from classrooms.models import Classroom
 from .models import Student
 from .face_utils import generate_embedding
+from django.contrib.auth.models import User
+from users.models import UserRole
 
 def student_list_view(request):
     """Renders the list of all students."""
@@ -37,6 +39,9 @@ def register_student_api(request):
         return JsonResponse({"error": "Method not allowed"}, status=405)
 
     try:
+        from django.contrib.auth.models import User
+        from users.models import UserRole
+        
         data = json.loads(request.body)
         
         full_name = data.get("full_name")
@@ -83,8 +88,16 @@ def register_student_api(request):
 
         # Create Student
         with transaction.atomic():
+            # Create User
+            # Use roll_no as username and initial password
+            user = User.objects.create_user(username=roll_no, password=roll_no)
+            
+            # Assign 'student' role
+            UserRole.objects.create(user=user, role='student')
+
             classroom = Classroom.objects.get(id=classroom_id)
             student = Student.objects.create(
+                user=user,
                 full_name=full_name,
                 roll_no=roll_no,
                 classroom=classroom,
@@ -94,13 +107,15 @@ def register_student_api(request):
         return JsonResponse({
             "status": "success", 
             "student_id": student.id,
-            "message": "Student registered successfully"
+            "message": "Student registered successfully. Login with Roll No as username and password."
         })
 
     except Classroom.DoesNotExist:
         return JsonResponse({"error": "Invalid Classroom ID"}, status=400)
     except Exception as e:
         print(f"Registration Error: {e}")
+        # If user creation failed but not caught specifically, we might want to ensure atomicity handles it.
+        # atomic() block ensures if student creation fails, user creation is rolled back.
         return JsonResponse({"error": str(e)}, status=500)
 
 def student_delete_view(request, pk):
