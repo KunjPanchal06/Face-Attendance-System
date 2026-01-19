@@ -260,6 +260,14 @@
                                             placeholder="e.g., John Doe">
                                     </div>
 
+                                    <!-- Email -->
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700">Email Address</label>
+                                        <input type="email" name="email" required
+                                            class="mt-1 block w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 py-2.5 px-3"
+                                            placeholder="e.g., john@example.com">
+                                    </div>
+
                                     <!-- Roll Number -->
                                     <div>
                                         <label class="block text-sm font-medium text-slate-700">Roll Number</label>
@@ -500,10 +508,11 @@
 
         async function saveStudent() {
             const name = form.querySelector('input[name="name"]').value;
+            const email = form.querySelector('input[name="email"]').value; // Capture email
             const rollNo = form.querySelector('input[name="roll_number"]').value;
             const classroomId = form.querySelector('select[name="classroom"]').value;
 
-            if (!name || !rollNo || !classroomId) {
+            if (!name || !email || !rollNo || !classroomId) {
                 alert("Please fill in all student details.");
                 return;
             }
@@ -518,6 +527,7 @@
 
             const payload = {
                 full_name: name,
+                email: email, // Send email
                 roll_no: rollNo,
                 classroom_id: classroomId,
                 images: capturedImages

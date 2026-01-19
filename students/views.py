@@ -45,6 +45,7 @@ def register_student_api(request):
         data = json.loads(request.body)
         
         full_name = data.get("full_name")
+        email = data.get("email", "")  # Get email
         roll_no = data.get("roll_no")
         classroom_id = data.get("classroom_id")
         images_base64 = data.get("images", [])
@@ -89,8 +90,31 @@ def register_student_api(request):
         # Create Student
         with transaction.atomic():
             # Create User
+            # Split name for User model
+            names = full_name.split(" ", 1)
+            first_name = names[0]
+            last_name = names[1] if len(names) > 1 else ""
+
+            # Check if User already exists
+            if User.objects.filter(username=roll_no).exists():
+                existing_user = User.objects.get(username=roll_no)
+                # Check if this user is linked to another student?
+                if Student.objects.filter(user=existing_user).exists():
+                    return JsonResponse({"error": "A user with this Roll Number already exists and is linked to a student."}, status=400)
+                else:
+                    # User exists but is orphaned (not linked to any student). 
+                    # Likely from a failed previous attempt or deletion without user cleanup.
+                    # We can safely delete this orphan user and create a fresh one.
+                    existing_user.delete()
+            
             # Use roll_no as username and initial password
-            user = User.objects.create_user(username=roll_no, password=roll_no)
+            user = User.objects.create_user(
+                username=roll_no, 
+                password=roll_no,
+                email=email,
+                first_name=first_name,
+                last_name=last_name
+            )
             
             # Assign 'student' role
             UserRole.objects.create(user=user, role='student')
@@ -123,7 +147,15 @@ def student_delete_view(request, pk):
     student = get_object_or_404(Student, pk=pk)
     
     if request.method == "POST":
-        student.delete()
+        # Delete linked User (which cascades Student delete usually, but we do it explicitly to be safe or if unrelated)
+        # Actually, Student -> User is OneToOne on Student side. 
+        # If we delete Student, User is NOT deleted by Django default OneToOne unless we set it up that way.
+        # But we want to remove the LOGIN account too.
+        if student.user:
+            student.user.delete() # This might cascade delete the student if on_delete=CASCADE involves it, but let's be sure.
+        else:
+            student.delete()
+            
         return redirect('students:student_list')
         
     return redirect('students:student_list')
