@@ -1,5 +1,4 @@
 import cv2
-import tempfile
 import os
 import django
 
@@ -9,6 +8,7 @@ os.environ.setdefault(
 )
 
 django.setup()
+
 
 
 from students.face_utils import generate_embedding
@@ -37,29 +37,28 @@ def start_camera_attendance():
 
         # Capture frame
         if key == ord("c"):
-            # Save frame temporarily
-            with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
-                temp_image_path = tmp.name
-                cv2.imwrite(temp_image_path, frame)
-
+            # We can pass the frame directly to generate_embedding now!
             try:
-                embedding = generate_embedding(temp_image_path)
-                student, similarity = find_matching_student(embedding)
+                # Use robust single embedding for recognition
+                embedding = generate_embedding(frame)
+                
+                if embedding:
+                    student, similarity = find_matching_student(embedding)
 
-                if student:
-                    attendance, created = mark_attendance(student)
-                    print(
-                        f"Attendance marked for {student.roll_no} "
-                        f"(similarity={similarity:.2f})"
-                    )
+                    if student:
+                        attendance, created = mark_attendance(student)
+                        status_msg = "Marked Present" if created else "Already Marked"
+                        print(
+                            f"Success: {student.roll_no} - {status_msg} "
+                            f"(similarity={similarity:.2f})"
+                        )
+                    else:
+                        print("No matching student found")
                 else:
-                    print("No matching student found")
+                    print("No face detected in the frame")
 
             except Exception as e:
                 print("Error:", e)
-
-            finally:
-                os.remove(temp_image_path)
 
         # Quit
         elif key == ord("q"):
