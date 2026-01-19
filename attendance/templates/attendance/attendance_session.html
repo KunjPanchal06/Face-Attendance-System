@@ -323,6 +323,8 @@
                         showStatus(message, color);
                         logActivity(data.student, data.marked);
 
+                    } else if (response.status === 404) {
+                        showStatus("No match found", "text-amber-500");
                     }
 
                 } catch (err) {

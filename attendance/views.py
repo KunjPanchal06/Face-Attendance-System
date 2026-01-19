@@ -15,14 +15,17 @@ def mark_attendance_view(request):
         student, similarity = find_matching_student(embedding)
 
         if student:
+            print(f"MATCH FOUND: Student {student.roll_no} with similarity {similarity}")
             attendance, created = mark_attendance(student)
+            print(f"Attendance marked: {created}")
             return JsonResponse({
                 "status": "success",
-                "student": student.roll_no,
+                "student": f"{student.full_name} ({student.roll_no})",
                 "similarity": similarity,
                 "marked": created
             })
 
+        print(f"NO MATCH FOUND. Max similarity was likely below threshold.")
         return JsonResponse({"status": "no_match"}, status=404)
 
     return JsonResponse({"error": "Invalid request"}, status=400)
