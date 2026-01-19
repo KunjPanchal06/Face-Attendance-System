@@ -274,9 +274,9 @@
                                         <select name="classroom"
                                             class="mt-1 block w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 py-2.5 px-3 bg-white">
                                             <option value="">Select a classroom...</option>
-                                            <option value="1">Class 10-A</option>
-                                            <option value="2">Class 12-B</option>
-                                            <option value="3">Computer Lab</option>
+                                            {% for classroom in classrooms %}
+                                            <option value="{{ classroom.id }}">{{ classroom.name }}</option>
+                                            {% endfor %}
                                         </select>
                                     </div>
 

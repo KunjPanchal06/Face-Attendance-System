@@ -11,7 +11,7 @@ def generate_embedding(img_input):
         results = DeepFace.represent(
             img_path=img_input,
             model_name="Facenet512", # Using Facenet512 for better accuracy
-            enforce_detection=True,  # Ensure a face is actually found
+            enforce_detection=False,  # Allow processing even if face detection fails/is unsure
             detector_backend="opencv"
         )
         

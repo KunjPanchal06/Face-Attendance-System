@@ -12,4 +12,7 @@ urlpatterns = [
     
     # API to handle data submission
     path('api/register/', views.register_student_api, name='register_student_api'),
+
+    # Delete student
+    path('delete/<int:pk>/', views.student_delete_view, name='student_delete'),
 ]

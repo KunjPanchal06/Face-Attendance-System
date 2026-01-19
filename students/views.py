@@ -102,3 +102,13 @@ def register_student_api(request):
     except Exception as e:
         print(f"Registration Error: {e}")
         return JsonResponse({"error": str(e)}, status=500)
+
+def student_delete_view(request, pk):
+    """Deletes a student record."""
+    student = get_object_or_404(Student, pk=pk)
+    
+    if request.method == "POST":
+        student.delete()
+        return redirect('students:student_list')
+        
+    return redirect('students:student_list')
