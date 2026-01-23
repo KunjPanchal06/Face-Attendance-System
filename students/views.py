@@ -45,26 +45,33 @@ def student_detail_view(request, pk):
     # Build combined history list
     history = []
     
+    # Import localtime for timezone conversion
+    from django.utils.timezone import localtime
+    
     # Add present records
     for record in present_records:
+        local_timestamp = localtime(record.timestamp)
         history.append({
-            'date': record.timestamp.date(),
-            'time': record.timestamp.strftime('%I:%M %p'),
+            'date': local_timestamp.date(),
+            'time': local_timestamp.strftime('%I:%M %p'),
+            'timestamp': record.timestamp,  # Keep original for sorting
             'status': 'Present',
             'color': 'green'
         })
         
     # Add absent records
     for timestamp in absent_timestamps:
+        local_timestamp = localtime(timestamp)
         history.append({
-            'date': timestamp.date(),
-            'time': timestamp.strftime('%I:%M %p'),
+            'date': local_timestamp.date(),
+            'time': local_timestamp.strftime('%I:%M %p'),
+            'timestamp': timestamp,  # Keep original for sorting
             'status': 'Absent',
             'color': 'red'
         })
         
-    # Sort by date and time descending
-    history.sort(key=lambda x: (x['date'], x['time']), reverse=True)
+    # Sort by timestamp descending (using actual datetime object for accuracy)
+    history.sort(key=lambda x: x['timestamp'], reverse=True)
     
     # Avoid division by zero
     attendance_percentage = 0
