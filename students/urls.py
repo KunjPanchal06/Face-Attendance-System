@@ -7,6 +7,10 @@ urlpatterns = [
     # Page to render the list of students
     path('', views.student_list_view, name='student_list'),
 
+    # Page to render the detailed report of a student
+    path('<int:pk>/', views.student_detail_view, name='student_detail'),
+
+
     # Page to render the registration form
     path('add/', views.student_create_view, name='student_create'),
     

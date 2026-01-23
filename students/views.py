@@ -11,12 +11,76 @@ from .models import Student
 from .face_utils import generate_embedding
 from django.contrib.auth.models import User
 from users.models import UserRole
+from attendance.models import Attendance
 
 def student_list_view(request):
     """Renders the list of all students."""
     students = Student.objects.select_related('classroom').all()
     classrooms = Classroom.objects.all()
     return render(request, 'students/student_list.html', {'students': students, 'classrooms': classrooms})
+
+def student_detail_view(request, pk):
+    """Renders the detailed attendance report for a specific student."""
+    student = get_object_or_404(Student, pk=pk)
+    
+    # Get all attendance records for this student
+    present_records = Attendance.objects.filter(student=student)
+    # Get the set of timestamps when this student was present
+    student_present_timestamps = set(present_records.values_list('timestamp', flat=True))
+    present_count = len(student_present_timestamps)
+    
+    # Get ALL unique session timestamps for this classroom
+    # A "session" is defined by a unique timestamp when any student was marked present
+    all_session_timestamps = Attendance.objects.filter(
+        classroom=student.classroom
+    ).values_list('timestamp', flat=True).distinct()
+    all_session_timestamps_set = set(all_session_timestamps)
+    
+    total_sessions = len(all_session_timestamps_set)
+    
+    # Identify absent sessions (timestamps when student was NOT present)
+    absent_timestamps = all_session_timestamps_set - student_present_timestamps
+    absent_count = len(absent_timestamps)
+    
+    # Build combined history list
+    history = []
+    
+    # Add present records
+    for record in present_records:
+        history.append({
+            'date': record.timestamp.date(),
+            'time': record.timestamp.strftime('%I:%M %p'),
+            'status': 'Present',
+            'color': 'green'
+        })
+        
+    # Add absent records
+    for timestamp in absent_timestamps:
+        history.append({
+            'date': timestamp.date(),
+            'time': timestamp.strftime('%I:%M %p'),
+            'status': 'Absent',
+            'color': 'red'
+        })
+        
+    # Sort by date and time descending
+    history.sort(key=lambda x: (x['date'], x['time']), reverse=True)
+    
+    # Avoid division by zero
+    attendance_percentage = 0
+    if total_sessions > 0:
+        attendance_percentage = round((present_count / total_sessions) * 100, 1)
+    
+    context = {
+        'student': student,
+        'attendance_history': history,
+        'present_count': present_count,
+        'total_sessions': total_sessions,
+        'absent_count': absent_count,
+        'attendance_percentage': attendance_percentage,
+    }
+    return render(request, 'students/student_detail.html', context)
+
 
 def student_create_view(request):
     """Renders the student registration page with classroom options."""
