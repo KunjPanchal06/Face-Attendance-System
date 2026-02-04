@@ -45,10 +45,20 @@ def logout_view(request):
 @login_required(login_url='/users/login')
 @admin_required
 def admin_dashboard_view(request):
+    from django.utils import timezone
+    from attendance.models import Attendance
+    
     total_classrooms = Classroom.objects.count()
     total_students = Student.objects.count()
-    total_sessions_today = 0
-    total_attendance = 0
+    
+    # Get today's date range
+    today = timezone.localtime(timezone.now()).date()
+    
+    # Count today's attendance sessions (unique students marked today)
+    total_sessions_today = Attendance.objects.filter(date=today).count()
+    
+    # Total attendance records ever
+    total_attendance = Attendance.objects.count()
 
     context = {
         'total_classrooms': total_classrooms,
@@ -61,12 +71,38 @@ def admin_dashboard_view(request):
 @login_required(login_url='/users/login')
 @student_required
 def student_dashboard_view(request):
+    from django.utils import timezone
+    from attendance.models import Attendance
+    
     profile = Student.objects.filter(user=request.user).first()
-
-    attendance_percent = 85
-    classes_attended = 40
-    classes_missed = 8
-    last_session_status = "Present"
+    
+    # Default values if no profile found
+    attendance_percent = 0
+    classes_attended = 0
+    classes_missed = 0
+    last_session_status = "N/A"
+    
+    if profile:
+        # Get this student's attendance records
+        student_attendance = Attendance.objects.filter(student=profile)
+        classes_attended = student_attendance.count()
+        
+        # Get total sessions for this student's classroom
+        total_sessions = Attendance.objects.filter(
+            classroom=profile.classroom
+        ).values('date').distinct().count()
+        
+        # Calculate missed classes
+        classes_missed = max(0, total_sessions - classes_attended)
+        
+        # Calculate percentage
+        if total_sessions > 0:
+            attendance_percent = round((classes_attended / total_sessions) * 100, 1)
+        
+        # Get last session status
+        last_record = student_attendance.order_by('-timestamp').first()
+        if last_record:
+            last_session_status = "Present" if last_record.present else "Absent"
 
     context = {
         'profile': profile,

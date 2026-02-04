@@ -6,11 +6,13 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.db import transaction
+from django.contrib.auth.decorators import login_required
 from classrooms.models import Classroom
 from .models import Student
 from .face_utils import generate_embedding
 from django.contrib.auth.models import User
 from users.models import UserRole
+from users.decorators import admin_required
 from attendance.models import Attendance
 
 def student_list_view(request):
@@ -94,7 +96,8 @@ def student_create_view(request):
     classrooms = Classroom.objects.all()
     return render(request, 'students/student_create.html', {'classrooms': classrooms})
 
-@csrf_exempt
+@login_required(login_url='/users/login')
+@admin_required
 def register_student_api(request):
     """
     API endpoint to register a new student.
